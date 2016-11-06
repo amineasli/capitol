@@ -1,0 +1,77 @@
+#!/usr/bin/perl 
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Crypt::CBC;
+
+#The location of the database file
+my $pwd_db_file = "pwd-db.dat";
+my $pwd_db;
+my $username;
+my $password;
+my $type; 
+my $host;
+my $description = '';
+my $key = 'my secret key';
+my $cipher_alg = 'Blowfish';
+my $cipher = Crypt::CBC->new( -key    => $key,
+                              -cipher => $cipher_alg ); 
+
+GetOptions ( "username|u=s"    => \$username,
+	     "password|p=s"    => \$password,
+	     "type|t=s"        => \$type,
+	     "host|h=s"	       => \$host,
+	     "description|d=s" => \$description );
+
+usage() unless ( $username and $password and $type and $host );
+
+add_password();
+
+sub usage {
+   die "Usage: $0 -u <username> -p <password> -t <type> -h <host> [ -d <description> ]\n"
+}
+
+sub password_exists {
+   my $found;
+   open my $pwd_db_r, '<', $pwd_db_file
+      or die "Cannot open password database file $pwd_db_file for reading: $!\n";
+
+   while ( <$pwd_db_r> ) {
+      chomp;
+      if ( /$username/ and /$type/ and /$host/ ) {
+         $found = 1; 
+         last;
+      }
+   }
+
+   close $pwd_db_r
+      or die "Error closing $pwd_db_file: $!\n"; 
+
+   return $found ? 1 : 0;
+}
+
+sub add_password {
+   die "Password already exists" if password_exists();
+
+   open $pwd_db, '>>', $pwd_db_file
+      or die "Cannot open password database file $pwd_db_file for appending: $!\n";
+
+   #Encrypt password field
+   my $cipher_password = $cipher->encrypt($password);
+   
+   #Create a new record
+   my $record = join( ":", $username, $cipher_password, $type, $host, $description );
+   
+   #Insert the new record
+   print $pwd_db "$record\n"
+      or die "Error writing to $pwd_db_file: $!\n";
+
+   close $pwd_db
+      or die "Error closing $pwd_db_file: $!\n"; 
+
+   print "Password added successfully\n";
+
+}
+
+exit 0;  
