@@ -24,6 +24,7 @@ sub usage {
 }
 
 sub del_password {
+   my $found;  
    open my $pwd_db_fh, '<', $pwd_db_file
       or die "Cannot open password database file $pwd_db_file for reading: $!\n";
 
@@ -38,8 +39,8 @@ sub del_password {
                 and ( $type eq $type_field ) 
                 and ( $host eq $host_field ) ) {
 
-            print "Password deleted successfully!\n";
-            next
+            $found = 1;
+            next;
       } 
 
       # Write the original record out to the temporary file
@@ -60,6 +61,9 @@ sub del_password {
    # And renaming the new file to replace the old one. 
    rename $temp_file, $pwd_db_file
       or die "Can't rename $temp_file to $pwd_db_file: $!\n";
+
+     
+   print "Password deleted successfully!\n" if $found
 
 }
 
