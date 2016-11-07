@@ -13,6 +13,7 @@ my $password;
 my $type; 
 my $host;
 my $description = '';
+my $pwd_length;
 my $key = 'my secret key';
 my $cipher_alg = 'Blowfish';
 my $cipher = Crypt::CBC->new( -key    => $key,
@@ -22,14 +23,15 @@ GetOptions ( "username|u=s"    => \$username,
 	     "password|p=s"    => \$password,
 	     "type|t=s"        => \$type,
 	     "host|h=s"	       => \$host,
-	     "description|d=s" => \$description );
+	     "description|d=s" => \$description, 
+             "generate|g=i"    => \$pwd_length);
 
-usage() unless ( $username and $password and $type and $host );
+usage() unless ( $username and ($password or $pwd_length) and $type and $host );
 
 add_password();
 
 sub usage {
-   die "Usage: $0 -u <username> -p <password> -t <type> -h <host> [ -d <description> ]\n"
+   die "Usage: $0 -u <username> [ -p <password> | -g <pwd_length> ] -t <type> -h <host> [ -d <description> ] \n"
 }
 
 sub password_exists {
@@ -51,8 +53,16 @@ sub password_exists {
    return $found ? 1 : 0;
 }
 
+sub generate_random_pwd {
+   my @random_chars = ( 'a'..'z', 'A'..'Z', 0..9, '$', '&', ' ', '?', '@', '#', '<', '>', '(', ')', '{', '}', '[', ']', '/', '\\' );
+   return join '', map $random_chars[rand @random_chars], 0..$_[0];
+}
+
 sub add_password {
    die "Password already exists" if password_exists();
+   
+   $password = generate_random_pwd($pwd_length) if $pwd_length;
+   print "$password\n";
 
    open $pwd_db, '>>', $pwd_db_file
       or die "Cannot open password database file $pwd_db_file for appending: $!\n";
