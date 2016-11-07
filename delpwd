@@ -34,9 +34,13 @@ sub del_password {
       my ( $username_field, $type_field, $host_field ) = ( split /:/ )[ 0, 2, 3 ]; 
 
       # We've found the record to delete, so skip it and move to next record
-      next if ( ( $username eq $username_field ) 
+      if ( ( $username eq $username_field ) 
                 and ( $type eq $type_field ) 
-                and ( $host eq $host_field ) );
+                and ( $host eq $host_field ) ) {
+
+            print "Password deleted successfully!\n";
+            next
+      } 
 
       # Write the original record out to the temporary file
       print $temp_fh $_ 
@@ -56,4 +60,7 @@ sub del_password {
    # And renaming the new file to replace the old one. 
    rename $temp_file, $pwd_db_file
       or die "Can't rename $temp_file to $pwd_db_file: $!\n";
+
 }
+
+exit 0;
