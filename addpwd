@@ -7,7 +7,6 @@ use Crypt::CBC;
 
 #The location of the database file
 my $pwd_db_file = 'pwd-db.dat';
-my $pwd_db;
 my $username;
 my $password;
 my $type; 
@@ -31,7 +30,7 @@ usage() unless ( $username and ($password or $pwd_length) and $type and $host );
 add_password();
 
 sub usage {
-   die "Usage: $0 -u <username> [ -p <password> | -g <pwd_length> ] -t <type> -h <host> [ -d <description> ] \n"
+   die "Usage: $0 -u <username> [ -p <password> | -g <pwd_length> ] -t <type> -h <host> [ -d <description> ] \n";
 }
 
 sub password_exists {
@@ -60,11 +59,12 @@ sub generate_random_pwd {
 }
 
 sub add_password {
+
    die "Password already exists" if password_exists();
    
    $password = generate_random_pwd($pwd_length) if $pwd_length;
 
-   open $pwd_db, '>>', $pwd_db_file
+   open my $pwd_db_fh, '>>', $pwd_db_file
       or die "Cannot open password database file $pwd_db_file for appending: $!\n";
 
    #Encrypt password field
@@ -74,10 +74,10 @@ sub add_password {
    my $record = join( ":", $username, $cipher_password, $type, $host, $description );
    
    #Insert the new record
-   print $pwd_db "$record\n"
+   print $pwd_db_fh "$record\n"
       or die "Error writing to $pwd_db_file: $!\n";
 
-   close $pwd_db
+   close $pwd_db_fh
       or die "Error closing $pwd_db_file: $!\n"; 
 
    print "Password added successfully\n";
