@@ -1,0 +1,59 @@
+#!/usr/bin/perl 
+
+use strict;
+use warnings; 
+use Getopt::Long;
+
+#The location of the database file
+my $pwd_db_file = 'pwd-db.dat';
+my $temp_file = "tmp.$$";
+my $username;
+my $type; 
+my $host;
+
+GetOptions ( "username|u=s"    => \$username,
+	     "type|t=s"        => \$type,
+	     "host|h=s"	       => \$host );
+
+usage() unless ( $username and $type and $host );
+
+del_password();
+
+sub usage {
+   die "Usage: $0 -u <username> -t <type> -h <host> \n";
+}
+
+sub del_password {
+   open my $pwd_db_fh, '<', $pwd_db_file
+      or die "Cannot open password database file $pwd_db_file for reading: $!\n";
+
+   open my $temp_fh, '>', $temp_file
+      or die "Cannot open temporary file $temp_file for writing: $!\n";
+
+   while ( <$pwd_db_fh> ) {
+      my ( $username_field, $type_field, $host_field ) = ( split /:/ )[ 0, 2, 3 ]; 
+
+      # We've found the record to delete, so skip it and move to next record
+      next if ( ( $username eq $username_field ) 
+                and ( $type eq $type_field ) 
+                and ( $host eq $host_field ) );
+
+      # Write the original record out to the temporary file
+      print $temp_fh $_ 
+         or die "Error writing $temp_file: $!\n";
+   }
+
+   close $pwd_db_fh
+      or die "Error closing $pwd_db_file: $!\n"; 
+
+   close $temp_fh
+      or die "Error closing $temp_file: $!\n"; 
+
+   # We now "commit" the changes by deleting the old file 
+   unlink $pwd_db_file
+      or die "Can't delete old $pwd_db_file: $!\n";
+
+   # And renaming the new file to replace the old one. 
+   rename $temp_file, $pwd_db_file
+      or die "Can't rename $temp_file to $pwd_db_file: $!\n";
+}
